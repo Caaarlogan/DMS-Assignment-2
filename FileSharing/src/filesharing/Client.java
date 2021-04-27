@@ -10,12 +10,16 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.UnknownHostException;
 import java.rmi.Naming;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.HashSet;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -23,7 +27,11 @@ import java.util.Set;
  */
 public class Client {
 
-    PeerImpl peer;
+    private PeerImpl peer;
+    private InetAddress ip;
+    private Set<String> usernames;
+    private Registry registry;
+    private String username;
 
     public static void main(String[] args) {
         Client client = new Client();
@@ -31,33 +39,57 @@ public class Client {
     }
 
     public void start() {
-        Scanner scan = new Scanner(System.in);
-        InetAddress ip;
 
         try {
+            Scanner scan = new Scanner(System.in);
             ip = InetAddress.getLocalHost();
-            System.out.println("Enter your username");
-            String username = scan.nextLine();
+            usernames = new HashSet();
 
-            PeerImpl remoteObject = new PeerImpl(username + "@" + ip);
-            try {  // create stub (note prior to Java 5.0 must use rmic utility)
-                Peer stub = (Peer) UnicastRemoteObject.exportObject(remoteObject, 0);
+            try {
 
                 // create the registry which is running on the default port 1099
-                Registry registry = LocateRegistry.getRegistry();
-                registry.rebind(username, stub);//binds if not already
-                // display the names currently bound in the registry
-                System.out.println("Names bound in RMI registry");
+                registry = LocateRegistry.getRegistry();
+
+                System.out.println("Users in the RMI Registry");
+                // get all usernames currently bound in the registry
                 try {
                     String[] bindings = Naming.list("localhost"); // no URL
                     for (String name : bindings) {
+                        usernames.add(name);
                         System.out.println(name);
                     }
+
+                    System.out.println("\nEnter your username");
+                    username = scan.nextLine();
+
+                    while (usernames.contains("//:1099/" + username)) {
+                        System.out.println("Username already taken, please enter a new one");
+                        username = scan.nextLine();
+                    }
+
+                    username = username + "@" + ip;
+                    peer = new PeerImpl(username);
+
+                    // create stub
+                    Peer stub = (Peer) UnicastRemoteObject.exportObject(peer, 0);
+
+                    registry.rebind(username, stub);//binds if not already
+
+                    System.out.println("Enter a user to join their peer to peer distributed system");
+                    String joinUser = scan.nextLine();
+
+                    while (!usernames.contains("//:1099/" + joinUser)) {
+                        System.out.println("Please enter a user in the RMI Registry");
+                        joinUser = scan.nextLine();
+                    }
+                    
+                    stub.connectTo(joinUser);
+
+                    terminate();
                 }
                 catch (MalformedURLException e) {
                     System.err.println("Unable to see names: " + e);
                 }
-                System.out.println("what do u want to do (1 for select file)");
             }
             catch (RemoteException e) {
                 System.err.println("Unable to bind to registry: " + e);
@@ -65,6 +97,26 @@ public class Client {
         }
         catch (UnknownHostException e) {
             e.printStackTrace();
+        }
+    }
+
+    public void joinDS() {
+
+    }
+
+    public void terminate() {
+        try {
+            //unbind user to registry
+            registry.unbind(username);
+
+            //remove stub
+            UnicastRemoteObject.unexportObject(peer, true);
+        }
+        catch (RemoteException ex) {
+            Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        catch (NotBoundException ex) {
+            Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 

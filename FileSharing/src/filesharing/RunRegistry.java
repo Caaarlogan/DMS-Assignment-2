@@ -11,7 +11,7 @@ import java.rmi.registry.Registry;
 public class RunRegistry {
     public static void main(String[] args) throws RemoteException {
         LocateRegistry.createRegistry(1099);
-        
+        System.out.println("Running RMI Registry");
         while(true);
     }
 }
