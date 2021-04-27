@@ -13,10 +13,9 @@ import java.util.Scanner;
 
 public class Peer implements PeerInterface {
 
-    //actually maybe use hashmap with string filename>actual file object, so that can easily say what file i have and then share it if wanted.
-    HashMap<String, File> files;
-    String username;
-    ArrayList<String> connectedPeers;
+    private HashMap<String, File> files;
+    private String username;
+    private ArrayList<String> connectedPeers;
 
     public Peer(String username) {
         files = new HashMap();
@@ -39,23 +38,5 @@ public class Peer implements PeerInterface {
     @Override
     public String[] getAvailableFiles() throws RemoteException {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    public static void main(String[] args) {
-        Scanner scan = new Scanner(System.in);
-
-        InetAddress ip;
-
-        try {
-            ip = InetAddress.getLocalHost();
-            System.out.println("Enter your username");
-            String username = scan.nextLine();
-
-            System.out.println(username + "@" + ip);
-        }
-        catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
-
     }
 }
