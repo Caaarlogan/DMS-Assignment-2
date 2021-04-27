@@ -4,12 +4,10 @@ package filesharing;
  * @author Carlo Carbonilla
  */
 import java.io.File;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Scanner;
+import java.util.Set;
 
 public class Peer implements PeerInterface {
 
@@ -36,7 +34,7 @@ public class Peer implements PeerInterface {
     }
 
     @Override
-    public String[] getAvailableFiles() throws RemoteException {
+    public Set<String> getAvailableFiles() throws RemoteException {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }
