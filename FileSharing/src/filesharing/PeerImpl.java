@@ -63,6 +63,33 @@ public class PeerImpl implements Peer {
     }
 
     @Override
+    public void leaveDS() throws RemoteException {
+        try {
+            registry = LocateRegistry.getRegistry("localhost");
+            
+            for (String user : connectedPeers) {
+                if (!user.equals(this.username)) {
+                    Peer rp = (Peer) registry.lookup(user);
+                    rp.removeUser(this.username);
+                }
+            }
+            
+            connectedPeers.clear();
+        }
+        catch (NotBoundException ex) {
+            Logger.getLogger(PeerImpl.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        catch (AccessException ex) {
+            Logger.getLogger(PeerImpl.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    @Override
+    public boolean removeUser(String username) throws RemoteException {
+        return connectedPeers.remove(username);
+    }
+
+    @Override
     public Set<String> getUsers() throws RemoteException {
         return connectedPeers;
     }

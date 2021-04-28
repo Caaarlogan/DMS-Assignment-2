@@ -96,6 +96,7 @@ public class Client {
         System.out.println("What would you like to do?");
         System.out.println("1) Join distributed system");
         System.out.println("2) List users in distributed system");
+        System.out.println("3) Leave distributed system");
 
         String option = scan.nextLine();
 
@@ -103,8 +104,12 @@ public class Client {
             joinDS(scan, stub);
             options(scan, stub);
         }
-        else {
+        if (option.equals("2")) {
             printDSUsers(stub);
+            options(scan, stub);
+        }
+        else {
+            leaveDS(stub);
             options(scan, stub);
         }
     }
@@ -131,22 +136,47 @@ public class Client {
 
     public void joinDS(Scanner scan, Peer stub) {
         try {
-            System.out.println("Enter a user to join their peer to peer distributed system");
-            String joinUser = scan.nextLine();
-
-            while (!registryUsers.contains("//:1099/" + joinUser)) {
-                System.out.println("Please enter a user in the RMI Registry");
-                joinUser = scan.nextLine();
-            }
-
-            stub.connectTo(joinUser);
             dsUsers = stub.getUsers();
+
+            if (dsUsers.isEmpty()) {
+                System.out.println("Enter a user to join their peer to peer distributed system");
+                String joinUser = scan.nextLine();
+
+                while (!registryUsers.contains("//:1099/" + joinUser)) {
+                    System.out.println("Please enter a user in the RMI Registry");
+                    joinUser = scan.nextLine();
+                }
+
+                stub.connectTo(joinUser);
+                dsUsers = stub.getUsers();
+            }
+            else {
+                System.out.println("Already part of a distributed system");
+            }
         }
         catch (RemoteException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
+    public void leaveDS(Peer stub) {
+        try {
+            dsUsers = stub.getUsers();
+
+            if (dsUsers.isEmpty()) {
+                System.out.println("Not part of a distributed system");
+            }
+            else {
+                stub.leaveDS();
+                dsUsers.clear();
+            }
+        }
+        catch (RemoteException ex) {
+            Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    //Removes user from registry and ends program
     public void terminate() {
         try {
             //unbind user to registry
