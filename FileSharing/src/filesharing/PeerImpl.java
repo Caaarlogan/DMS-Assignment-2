@@ -4,28 +4,67 @@ package filesharing;
  * @author Carlo Carbonilla
  */
 import java.io.File;
+import java.rmi.AccessException;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-import java.util.ArrayList;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class PeerImpl implements Peer {
 
     private HashMap<String, File> files;
     private String username;
-    private ArrayList<String> connectedPeers;
+    private Set<String> connectedPeers;
+    private Registry registry;
 
     public PeerImpl(String username) {
         files = new HashMap();
-        connectedPeers = new ArrayList<>();
+        connectedPeers = new HashSet();
         this.username = username;
     }
 
     @Override
-    public String[] connectTo(String username) throws RemoteException {
-        connectedPeers.add(username);
+    public void connectTo(String username) throws RemoteException {
+        try {
+            registry = LocateRegistry.getRegistry("localhost");
 
-        return connectedPeers.toArray(new String[0]);
+            addUser(username);
+
+            //Access user you want to connect to and have them add you as a peer
+            Peer remoteProxy = (Peer) registry.lookup(username);
+            remoteProxy.addUser(this.username);
+
+            //Access other users in distributed system and have them add you as a peer
+            Set<String> users = remoteProxy.getUsers();
+
+            for (String user : users) {
+                if (!user.equals(this.username)) {
+                    Peer rp = (Peer) registry.lookup(user);
+                    rp.addUser(this.username);
+                }
+            }
+        }
+        catch (NotBoundException ex) {
+            Logger.getLogger(PeerImpl.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        catch (AccessException ex) {
+            Logger.getLogger(PeerImpl.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    @Override
+    public boolean addUser(String username) throws RemoteException {
+        return connectedPeers.add(username);
+    }
+
+    @Override
+    public Set<String> getUsers() throws RemoteException {
+        return connectedPeers;
     }
 
     @Override

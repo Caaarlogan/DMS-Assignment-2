@@ -29,7 +29,8 @@ public class Client {
 
     private PeerImpl peer;
     private InetAddress ip;
-    private Set<String> usernames;
+    private Set<String> registryUsers;
+    private Set<String> dsUsers;
     private Registry registry;
     private String username;
 
@@ -43,7 +44,7 @@ public class Client {
         try {
             Scanner scan = new Scanner(System.in);
             ip = InetAddress.getLocalHost();
-            usernames = new HashSet();
+            registryUsers = new HashSet();
 
             try {
 
@@ -55,14 +56,14 @@ public class Client {
                 try {
                     String[] bindings = Naming.list("localhost"); // no URL
                     for (String name : bindings) {
-                        usernames.add(name);
+                        registryUsers.add(name);
                         System.out.println(name);
                     }
 
                     System.out.println("\nEnter your username");
                     username = scan.nextLine();
 
-                    while (usernames.contains("//:1099/" + username)) {
+                    while (registryUsers.contains("//:1099/" + username)) {
                         System.out.println("Username already taken, please enter a new one");
                         username = scan.nextLine();
                     }
@@ -75,17 +76,8 @@ public class Client {
 
                     registry.rebind(username, stub);//binds if not already
 
-                    System.out.println("Enter a user to join their peer to peer distributed system");
-                    String joinUser = scan.nextLine();
+                    options(scan, stub);
 
-                    while (!usernames.contains("//:1099/" + joinUser)) {
-                        System.out.println("Please enter a user in the RMI Registry");
-                        joinUser = scan.nextLine();
-                    }
-                    
-                    stub.connectTo(joinUser);
-
-                    terminate();
                 }
                 catch (MalformedURLException e) {
                     System.err.println("Unable to see names: " + e);
@@ -100,8 +92,59 @@ public class Client {
         }
     }
 
-    public void joinDS() {
+    public void options(Scanner scan, Peer stub) {
+        System.out.println("What would you like to do?");
+        System.out.println("1) Join distributed system");
+        System.out.println("2) List users in distributed system");
 
+        String option = scan.nextLine();
+
+        if (option.equals("1")) {
+            joinDS(scan, stub);
+            options(scan, stub);
+        }
+        else {
+            printDSUsers(stub);
+            options(scan, stub);
+        }
+    }
+
+    public void printDSUsers(Peer stub) {
+        try {
+            dsUsers = stub.getUsers();
+            System.out.println("Users in the distributed system");
+
+            if (dsUsers.isEmpty()) {
+                System.out.println("No users");
+            }
+            else {
+                for (String user : dsUsers) {
+                    System.out.println(user);
+                }
+            }
+
+        }
+        catch (RemoteException ex) {
+            Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    public void joinDS(Scanner scan, Peer stub) {
+        try {
+            System.out.println("Enter a user to join their peer to peer distributed system");
+            String joinUser = scan.nextLine();
+
+            while (!registryUsers.contains("//:1099/" + joinUser)) {
+                System.out.println("Please enter a user in the RMI Registry");
+                joinUser = scan.nextLine();
+            }
+
+            stub.connectTo(joinUser);
+            dsUsers = stub.getUsers();
+        }
+        catch (RemoteException ex) {
+            Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     public void terminate() {
