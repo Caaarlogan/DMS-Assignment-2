@@ -62,6 +62,24 @@ public class PeerImpl implements Peer {
         return connectedPeers.add(username);
     }
 
+    public int addFiles(File path){
+        System.out.println("loading files from: " + path.getAbsolutePath());
+        //default directory
+        File[] folderFiles = path.listFiles();
+        
+        int fileCount = 0;
+        
+        for (File file : folderFiles){
+            if (file.isFile()){
+                System.out.println("adding file: " + file.getName());
+                files.put(file.getName(), file);
+                fileCount++;
+            }
+        }
+        
+        return fileCount;
+    }
+    
     @Override
     public void leaveDS() throws RemoteException {
         try {
@@ -96,11 +114,11 @@ public class PeerImpl implements Peer {
 
     @Override
     public File getFile(String fileName) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return files.get(fileName);
     }
 
     @Override
-    public Set<String> getAvailableFiles() throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public Set<String> getAvailableFiles() throws RemoteException {        
+        return files.keySet();
     }
 }

@@ -6,6 +6,10 @@
 package filesharing;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.UnknownHostException;
@@ -27,6 +31,9 @@ import java.util.logging.Logger;
  */
 public class Client {
 
+    private final String fileFolderPath = System.getProperty("user.home") + "/Desktop/Assignment2";
+    private final File fileFolder;
+    
     private PeerImpl peer;
     private InetAddress ip;
     private Set<String> registryUsers;
@@ -37,6 +44,10 @@ public class Client {
     public static void main(String[] args) {
         Client client = new Client();
         client.start();
+    }
+    
+    public Client(){
+        fileFolder = new File(fileFolderPath);
     }
 
     public void start() {
@@ -70,10 +81,12 @@ public class Client {
 
                     username = username + "@" + ip;
                     peer = new PeerImpl(username);
+                    int filesAdded = peer.addFiles(fileFolder);
+                    System.out.println("loaded " + filesAdded + " files");
 
                     // create stub
                     Peer stub = (Peer) UnicastRemoteObject.exportObject(peer, 0);
-
+                    
                     registry.rebind(username, stub);//binds if not already
 
                     options(scan, stub);
@@ -199,6 +212,7 @@ public class Client {
         for (String s : files) {
             out += s + "\n";
         }
+        System.out.println(out);
         System.out.println("Enter file to get: ");
         Scanner keyboard = new Scanner(System.in);
         String input = keyboard.next();
@@ -221,6 +235,16 @@ public class Client {
     }
 
     private void saveFile(File f) {
-
+        String name = f.getName();
+        File file = new File(fileFolderPath + "/" + name);
+        
+        try {
+            OutputStream out = new FileOutputStream(file);
+            out.close();
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 }
