@@ -59,6 +59,7 @@ public class PeerImpl implements Peer {
 
     @Override
     public boolean addUser(String username) throws RemoteException {
+        System.out.println(username + " joined distributed system");
         return connectedPeers.add(username);
     }
 
@@ -104,6 +105,7 @@ public class PeerImpl implements Peer {
 
     @Override
     public boolean removeUser(String username) throws RemoteException {
+        System.out.println(username + " left distributed system");
         return connectedPeers.remove(username);
     }
 
@@ -114,11 +116,13 @@ public class PeerImpl implements Peer {
 
     @Override
     public File getFile(String fileName) throws RemoteException {
+        System.out.println("file requested: " + fileName);
         return files.get(fileName);
     }
 
     @Override
-    public Set<String> getAvailableFiles() throws RemoteException {        
+    public Set<String> getAvailableFiles() throws RemoteException { 
+        System.out.println("list of files requested");
         return files.keySet();
     }
 }
