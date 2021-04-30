@@ -9,6 +9,7 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -121,8 +122,9 @@ public class PeerImpl implements Peer {
     }
 
     @Override
-    public Set<String> getAvailableFiles() throws RemoteException { 
+    public ArrayList<String> getAvailableFiles() throws RemoteException { 
         System.out.println("list of files requested");
-        return files.keySet();
+        ArrayList fileList = new ArrayList(files.keySet());
+        return fileList;
     }
 }

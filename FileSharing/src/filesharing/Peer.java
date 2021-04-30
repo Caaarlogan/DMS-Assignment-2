@@ -7,6 +7,7 @@ package filesharing;
 import java.io.File;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.Set;
 
 public interface Peer extends Remote{
@@ -16,5 +17,5 @@ public interface Peer extends Remote{
     public boolean removeUser(String username) throws RemoteException;
     public Set<String> getUsers() throws RemoteException;
     public File getFile(String fileName) throws RemoteException;
-    public Set<String> getAvailableFiles() throws RemoteException;
+    public ArrayList<String> getAvailableFiles() throws RemoteException;
 }
