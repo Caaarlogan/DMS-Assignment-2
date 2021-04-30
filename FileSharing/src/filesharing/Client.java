@@ -33,7 +33,7 @@ public class Client {
 
     private final String fileFolderPath = System.getProperty("user.home") + "/Desktop/Assignment2";
     private final File fileFolder;
-    
+
     private PeerImpl peer;
     private InetAddress ip;
     private Set<String> registryUsers;
@@ -45,8 +45,8 @@ public class Client {
         Client client = new Client();
         client.start();
     }
-    
-    public Client(){
+
+    public Client() {
         fileFolder = new File(fileFolderPath);
     }
 
@@ -86,44 +86,49 @@ public class Client {
 
                     // create stub
                     Peer stub = (Peer) UnicastRemoteObject.exportObject(peer, 0);
-                    
+
                     registry.rebind(username, stub);//binds if not already
 
                     options(scan, stub);
 
-                }
-                catch (MalformedURLException e) {
+                } catch (MalformedURLException e) {
                     System.err.println("Unable to see names: " + e);
                 }
-            }
-            catch (RemoteException e) {
+            } catch (RemoteException e) {
                 System.err.println("Unable to bind to registry: " + e);
             }
-        }
-        catch (UnknownHostException e) {
+        } catch (UnknownHostException e) {
             e.printStackTrace();
         }
     }
 
-    public void options(Scanner scan, Peer stub) {
+    public void options(Scanner scan, Peer stub) throws RemoteException {
         System.out.println("What would you like to do?");
         System.out.println("1) Join distributed system");
         System.out.println("2) List users in distributed system");
-        System.out.println("3) Leave distributed system");
+        System.out.println("3) Get a file");
+        System.out.println("4) Leave distributed system");
 
         String option = scan.nextLine();
 
-        if (option.equals("1")) {
-            joinDS(scan, stub);
-            options(scan, stub);
-        }
-        if (option.equals("2")) {
-            printDSUsers(stub);
-            options(scan, stub);
-        }
-        else {
-            leaveDS(stub);
-            options(scan, stub);
+        switch (option) {
+            case "1":
+                joinDS(scan, stub);
+                options(scan, stub);
+                break;
+            case "2":
+                printDSUsers(stub);
+                options(scan, stub);
+                break;
+            case "3":
+                selectFile();
+                options(scan, stub);
+                break;
+            case "4":
+                leaveDS(stub);
+                options(scan, stub);
+                break;
+
         }
     }
 
@@ -134,15 +139,13 @@ public class Client {
 
             if (dsUsers.isEmpty()) {
                 System.out.println("No users");
-            }
-            else {
+            } else {
                 for (String user : dsUsers) {
                     System.out.println(user);
                 }
             }
 
-        }
-        catch (RemoteException ex) {
+        } catch (RemoteException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -162,12 +165,10 @@ public class Client {
 
                 stub.connectTo(joinUser);
                 dsUsers = stub.getUsers();
-            }
-            else {
+            } else {
                 System.out.println("Already part of a distributed system");
             }
-        }
-        catch (RemoteException ex) {
+        } catch (RemoteException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -178,13 +179,11 @@ public class Client {
 
             if (dsUsers.isEmpty()) {
                 System.out.println("Not part of a distributed system");
-            }
-            else {
+            } else {
                 stub.leaveDS();
                 dsUsers.clear();
             }
-        }
-        catch (RemoteException ex) {
+        } catch (RemoteException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -197,17 +196,23 @@ public class Client {
 
             //remove stub
             UnicastRemoteObject.unexportObject(peer, true);
-        }
-        catch (RemoteException ex) {
+        } catch (RemoteException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        catch (NotBoundException ex) {
+        } catch (NotBoundException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
-    public String selectFile() throws RemoteException {
-        Set<String> files = peer.getAvailableFiles();
+    public boolean selectFile() throws RemoteException, NotBoundException {
+        Set<String> files = new HashSet<>();
+
+        for (String tempUser : dsUsers) {
+            if (!tempUser.equals(this.username)) {
+                Peer rp = (Peer) registry.lookup(tempUser);
+                files.addAll(rp.getAvailableFiles());
+            }
+        }
+
         String out = "Available files:\n";
         for (String s : files) {
             out += s + "\n";
@@ -215,14 +220,21 @@ public class Client {
         System.out.println(out);
         System.out.println("Enter file to get: ");
         Scanner keyboard = new Scanner(System.in);
-        String input = keyboard.next();
+        String input = keyboard.next().trim();
         if (files.contains(input)) {
-            return input;
-        }
-        else {
+            for (String tempUser : dsUsers) {
+                if (!tempUser.equals(this.username)) {
+                    Peer rp = (Peer) registry.lookup(tempUser);
+                    Set<String> tempFiles = rp.getAvailableFiles();
+                    if (tempFiles.contains(input)){
+                        return saveFile(rp.getFile(input));
+                    }
+                }
+            }
+        } else {
             System.out.println("file not found");
         }
-        return null;
+        return false;
     }
 
     public void printUsers(String[] users) {
@@ -235,9 +247,11 @@ public class Client {
     }
 
     private boolean saveFile(File f) {
+        System.out.println("file received: " + f.getName());
+
         String name = f.getName();
         File file = new File(fileFolderPath + "/" + name);
-        
+
         Path source = f.toPath();
         Path dest = file.toPath();
         try {
@@ -245,7 +259,7 @@ public class Client {
         } catch (IOException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
+
         return true;
     }
 }
