@@ -6,13 +6,13 @@
 package filesharing;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
+import static java.nio.file.StandardCopyOption.*;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -234,17 +234,18 @@ public class Client {
 
     }
 
-    private void saveFile(File f) {
+    private boolean saveFile(File f) {
         String name = f.getName();
         File file = new File(fileFolderPath + "/" + name);
         
+        Path source = f.toPath();
+        Path dest = file.toPath();
         try {
-            OutputStream out = new FileOutputStream(file);
-            out.close();
-        } catch (FileNotFoundException ex) {
-            Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+            Files.copy(source, dest, REPLACE_EXISTING);
         } catch (IOException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
+        
+        return true;
     }
 }
