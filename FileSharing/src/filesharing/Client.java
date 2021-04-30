@@ -32,7 +32,7 @@ import java.util.logging.Logger;
  */
 public class Client {
 
-    private final String fileFolderPath = System.getProperty("user.home") + "/OneDrive/Desktop/Assignment2";
+    private final String fileFolderPath = System.getProperty("user.home") + "/Desktop/Assignment2";
     private final File fileFolder;
 
     private PeerImpl peer;
@@ -92,16 +92,13 @@ public class Client {
 
                     options(scan, stub);
 
-                }
-                catch (MalformedURLException e) {
+                } catch (MalformedURLException e) {
                     System.err.println("Unable to see names: " + e);
                 }
-            }
-            catch (RemoteException e) {
+            } catch (RemoteException e) {
                 System.err.println("Unable to bind to registry: " + e);
             }
-        }
-        catch (UnknownHostException e) {
+        } catch (UnknownHostException e) {
             e.printStackTrace();
         }
     }
@@ -135,8 +132,7 @@ public class Client {
                     break;
 
             }
-        }
-        catch (NotBoundException ex) {
+        } catch (NotBoundException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -148,15 +144,13 @@ public class Client {
 
             if (dsUsers.isEmpty()) {
                 System.out.println("No users");
-            }
-            else {
+            } else {
                 for (String user : dsUsers) {
                     System.out.println(user);
                 }
             }
 
-        }
-        catch (RemoteException ex) {
+        } catch (RemoteException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -176,12 +170,10 @@ public class Client {
 
                 stub.connectTo(joinUser);
                 dsUsers = stub.getUsers();
-            }
-            else {
+            } else {
                 System.out.println("Already part of a distributed system");
             }
-        }
-        catch (RemoteException ex) {
+        } catch (RemoteException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -192,13 +184,11 @@ public class Client {
 
             if (dsUsers.isEmpty()) {
                 System.out.println("Not part of a distributed system");
-            }
-            else {
+            } else {
                 stub.leaveDS();
                 dsUsers.clear();
             }
-        }
-        catch (RemoteException ex) {
+        } catch (RemoteException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -211,11 +201,9 @@ public class Client {
 
             //remove stub
             UnicastRemoteObject.unexportObject(peer, true);
-        }
-        catch (RemoteException ex) {
+        } catch (RemoteException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        catch (NotBoundException ex) {
+        } catch (NotBoundException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -224,18 +212,18 @@ public class Client {
         Set<String> files = new HashSet<>();
 
         registry = LocateRegistry.getRegistry();
-        
+
         System.out.println("Got registry");
-        
-        for (String tempUser : dsUsers) {
+
+        for (String tempUser : registry.list()) {
             if (!tempUser.equals(this.username)) {
                 Peer rp = (Peer) registry.lookup(tempUser);
                 files.addAll(rp.getAvailableFiles());
             }
         }
-        
+
         System.out.println("Finished for loop");
-        
+
         String out = "Available files:\n";
         for (String s : files) {
             out += s + "\n";
@@ -245,7 +233,7 @@ public class Client {
         Scanner keyboard = new Scanner(System.in);
         String input = keyboard.next().trim();
         if (files.contains(input)) {
-            for (String tempUser : dsUsers) {
+            for (String tempUser : registry.list()) {
                 if (!tempUser.equals(this.username)) {
                     Peer rp = (Peer) registry.lookup(tempUser);
                     ArrayList<String> tempFiles = rp.getAvailableFiles();
@@ -254,8 +242,7 @@ public class Client {
                     }
                 }
             }
-        }
-        else {
+        } else {
             System.out.println("file not found");
         }
         return false;
@@ -274,14 +261,21 @@ public class Client {
         System.out.println("file received: " + f.getName());
 
         String name = f.getName();
-        File file = new File(fileFolderPath + "/" + name);
+        File file = new File(fileFolderPath + "/" + username + "/" + name);
+        if (!file.exists()) {
+            file.getParentFile().mkdirs();
+            try {
+                file.createNewFile();
+            } catch (IOException ex) {
+                Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
 
         Path source = f.toPath();
         Path dest = file.toPath();
         try {
             Files.copy(source, dest, REPLACE_EXISTING);
-        }
-        catch (IOException ex) {
+        } catch (IOException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
 
